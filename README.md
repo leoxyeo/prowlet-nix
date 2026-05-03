@@ -1,51 +1,94 @@
 # prowlet-nix
 
-A Nix Flake for [prowlet](https://github.com/loiccoyle/prowlet), a shell script to query the Prowlarr search API from the CLI.
+Nix flake for [prowlet](https://github.com/loiccoyle/prowlet) — query the Prowlarr search API from the command line.
 
-## 🚀 Quick Start
+> **Note:** Linux only. `prowlet` relies on `xdg-open` and optionally `systemctl`, neither of which exist on macOS.
 
-Run `prowlet` instantly without installing it:
+## Quick Start
 
 ```bash
 nix run github:leoxyeo/prowlet-nix
 ```
 
-## 🛠 Installation
+## Installation
 
-### 1. Nix Profile
-To install it to your user profile:
+### Nix Profile
 
 ```bash
 nix profile install github:leoxyeo/prowlet-nix
 ```
 
-### 2. NixOS Configuration (Flakes)
-Add this repository to your `flake.nix` inputs:
+### NixOS (via overlay — recommended)
+
+In your `flake.nix`:
 
 ```nix
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    prowlet.url = "github:leoxyeo/prowlet-nix";
+    prowlet-nix.url = "github:leoxyeo/prowlet-nix";
   };
 
-  outputs = { self, nixpkgs, prowlet, ... }: {
+  outputs = { self, nixpkgs, prowlet-nix, ... }: {
     nixosConfigurations.your-hostname = nixpkgs.lib.nixosSystem {
-      specialArgs = { inherit prowlet; };
       modules = [
+        { nixpkgs.overlays = [ prowlet-nix.overlays.default ]; }
         ./configuration.nix
-        # OR use the provided module directly:
-        prowlet.nixosModules.default
       ];
     };
   };
 }
 ```
 
-If you use the provided module, `prowlet` is added to `environment.systemPackages` automatically.
+Then in `configuration.nix`:
 
-## 📦 Dependencies Included
-This flake automatically wraps `prowlet` with the following runtime dependencies:
-- `curl`
-- `jq`
-- `xdg-utils` (for `xdg-open`)
+```nix
+{ pkgs, ... }: {
+  environment.systemPackages = [ pkgs.prowlet ];
+}
+```
+
+### NixOS (via nixosModule — one-liner)
+
+Adds prowlet to `systemPackages` automatically:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    prowlet-nix.url = "github:leoxyeo/prowlet-nix";
+  };
+
+  outputs = { self, nixpkgs, prowlet-nix, ... }: {
+    nixosConfigurations.your-hostname = nixpkgs.lib.nixosSystem {
+      modules = [
+        prowlet-nix.nixosModules.default
+        ./configuration.nix
+      ];
+    };
+  };
+}
+```
+
+## Updating
+
+This flake pins a specific upstream commit. To update to the latest:
+
+1. Get the latest commit SHA from [upstream](https://github.com/loiccoyle/prowlet/commits/main)
+2. Update `rev` and `version` in `package.nix`
+3. Run `nix-prefetch-github loiccoyle prowlet --rev <new-sha>` to get the new hash
+4. Run `nix flake update` to refresh `flake.lock`
+
+## Dependencies
+
+All runtime dependencies are automatically injected via `wrapProgram`:
+
+| Package | Purpose |
+|---------|---------|
+| `curl` | HTTP requests to the Prowlarr API |
+| `jq` | JSON parsing and output formatting |
+| `xdg-utils` | `prowlet open` - opens Prowlarr dashboard |
+
+## License
+
+Nix packaging is licensed under MIT. The prowlet source code is subject to its own [license](https://github.com/loiccoyle/prowlet/blob/main/LICENSE).
