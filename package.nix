@@ -1,12 +1,5 @@
-{
-  lib,
-  stdenvNoCC,
-  fetchFromGitHub,
-  makeWrapper,
-  curl,
-  jq,
-  xdg-utils,
-}:
+{ lib, stdenvNoCC, fetchFromGitHub, makeWrapper, curl, jq, xdg-utils }:
+
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "prowlet";
 
@@ -22,7 +15,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     hash = "sha256-8dnCseHH+y4yY/2qaR9bHDSqG2kL5aenHdZFat/7Fyg=";
   };
 
-  nativeBuildInputs = [makeWrapper];
+  nativeBuildInputs = [ makeWrapper ];
 
   dontBuild = true;
 
@@ -31,17 +24,21 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
     install -Dm755 prowlet $out/bin/prowlet
 
-    # Shell completions
-    install -Dm644 completions/bash $out/share/bash-completion/completions/prowlet
-    install -Dm644 completions/zsh  $out/share/zsh/site-functions/_prowlet
-    install -Dm644 completions/fish $out/share/fish/vendor_completions.d/prowlet.fish
+    # Install whatever completion files exist without hardcoding their names
+    for f in completions/*; do
+      case "$f" in
+        *.bash|*bash_completion) install -Dm644 "$f" "$out/share/bash-completion/completions/prowlet" ;;
+        *.zsh|*_prowlet)        install -Dm644 "$f" "$out/share/zsh/site-functions/_prowlet" ;;
+        *.fish)                 install -Dm644 "$f" "$out/share/fish/vendor_completions.d/prowlet.fish" ;;
+      esac
+    done
 
     wrapProgram $out/bin/prowlet \
       --prefix PATH : ${lib.makeBinPath [
-      curl # HTTP requests to Prowlarr API
-      jq # JSON parsing and output formatting
-      xdg-utils # xdg-open for 'prowlet open' subcommand
-    ]}
+        curl      # HTTP requests to Prowlarr API
+        jq        # JSON parsing and output formatting
+        xdg-utils # xdg-open for 'prowlet open' subcommand
+      ]}
 
     runHook postInstall
   '';
