@@ -49,6 +49,3 @@ This flake automatically wraps `prowlet` with the following runtime dependencies
 - `curl`
 - `jq`
 - `xdg-utils` (for `xdg-open`)
-
-## ⚖️ License
-The Nix packaging is licensed under the MIT License. The `prowlet` source code is subject to its own [original license](https://github.com/loiccoyle/prowlet/blob/main/LICENSE).
